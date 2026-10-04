@@ -41,12 +41,12 @@ test('reject invalid arguments', () => {
 });
 `);
 const { configPath: _, ...raw } = base;
-const smokeConfig = { ...raw, workspaceRoots: [workspace], stateDir: path.join(base.stateDir, 'smoke'),
+const smokeConfig = { ...raw, stateDir: path.join(base.stateDir, 'smoke'),
   checks: { unit: { command: [process.execPath, '--test', 'test/paginate.test.cjs'], timeoutSeconds: 15 } }, defaultChecks: ['unit'] };
 const configPath = path.join(dir, 'config.json');
 await fs.writeFile(configPath, JSON.stringify(smokeConfig, null, 2));
 const client = new Client({ name: 'local-coder-live-smoke', version: '0.1.0' });
-await client.connect(new StdioClientTransport({ command: process.execPath,
+await client.connect(new StdioClientTransport({ command: process.execPath, cwd: workspace,
   args: [fileURLToPath(new URL('../src/mcp.js', import.meta.url)), '--config', configPath], stderr: 'inherit' }));
 const invoke = async (name, args) => {
   const result = await client.callTool({ name, arguments: args });

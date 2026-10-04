@@ -67,12 +67,12 @@ for (const item of cases) {
   await fs.writeFile(path.join(workspace, 'src/solution.py'), initial);
   const baseline = await runCommand(checker, { cwd: workspace, timeoutMs: 20000 });
   assert.notEqual(baseline.exit_code, 0, 'Expected initial candidate to fail the original checks');
-  const cfg = { ...rawConfig, workspaceRoots: [workRoot], stateDir: path.join(base.stateDir, 'regression'),
+  const cfg = { ...rawConfig, stateDir: path.join(base.stateDir, 'regression'),
     checks: { acceptance: { command: checker, timeoutSeconds: 20 } }, defaultChecks: ['acceptance'], requireChecks: true };
   const configPath = path.join(harness, `${slug}.config.json`);
   await fs.writeFile(configPath, JSON.stringify(cfg, null, 2));
   const client = new Client({ name: 'local-coder-regression', version: '0.2.0' });
-  await client.connect(new StdioClientTransport({ command: process.execPath,
+  await client.connect(new StdioClientTransport({ command: process.execPath, cwd: workRoot,
     args: [path.join(root, 'src/mcp.js'), '--config', configPath], stderr: 'inherit' }));
   const invoke = async (name, args) => {
     const result = await client.callTool({ name, arguments: args });

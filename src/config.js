@@ -12,7 +12,6 @@ const configSchema = z.object({
   baseUrl: z.string().url(),
   model: z.string().min(1),
   apiKeyEnv: z.string().default('LOCAL_CODER_API_KEY'),
-  workspaceRoots: z.array(z.string().min(1)).min(1),
   stateDir: z.string().default('.local-coder-state'),
   checks: z.record(command).default({}),
   defaultChecks: z.array(z.string()).default([]),
@@ -32,17 +31,38 @@ const configSchema = z.object({
   temperature: z.number().min(0).max(2).default(0),
 }).strict();
 
-export function loadConfig(filename) {
+export const validateConfig = raw => configSchema.parse(raw);
+
+const overrideKeys = ['baseUrl', 'model', 'apiKeyEnv'];
+
+// The example file is a template, not a runnable config, so it is never
+// returned; when no real config exists this returns null.
+export function defaultConfigPath(rootDir) {
+  for (const name of ['strata-coder.config.json', 'local-coder.config.json']) {
+    const candidate = path.join(rootDir, name);
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+export function projectConfigPath(rootDir) {
+  return path.join(rootDir, '.strata-coder', 'config.json');
+}
+
+export function loadConfig(filename, overrides = {}) {
   if (!filename) throw new Error('Pass --config /absolute/path/strata-coder.config.json or STRATA_CODER_CONFIG (legacy LOCAL_CODER_CONFIG also supported).');
   const configPath = fs.realpathSync(filename);
   const dir = path.dirname(configPath);
-  const config = configSchema.parse(JSON.parse(fs.readFileSync(configPath, 'utf8')));
+  const raw = { ...JSON.parse(fs.readFileSync(configPath, 'utf8')) };
+  for (const key of overrideKeys) {
+    if (overrides[key] !== undefined) raw[key] = overrides[key];
+  }
+  const config = configSchema.parse(raw);
   const url = new URL(config.baseUrl);
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) {
     throw new Error('baseUrl must be an http(s) endpoint without credentials, query or fragment.');
   }
   config.baseUrl = url.toString().replace(/\/+$/, '');
-  config.workspaceRoots = config.workspaceRoots.map(p => fs.realpathSync(path.resolve(dir, p)));
   config.stateDir = path.resolve(dir, config.stateDir);
   fs.mkdirSync(config.stateDir, { recursive: true, mode: 0o700 });
   config.stateDir = fs.realpathSync(config.stateDir);
@@ -57,7 +77,7 @@ export function loadConfig(filename) {
 }
 
 export const taskSchema = z.object({
-  workspace: z.string().min(1).describe('Absolute project directory on the machine running this worker.'),
+  workspace: z.string().min(1).optional().describe('Absolute project directory on the machine running this worker. May be omitted when the host provides a single workspace root.'),
   task: z.string().min(1).max(24000).describe('Concrete implementation goal, context and constraints.'),
   acceptance: z.array(z.string().min(1).max(4000)).min(1).max(30).describe('Observable acceptance criteria.'),
   allowed_paths: z.array(z.string().min(1)).max(100).default([]).describe('Relative file/directory prefixes; empty allows all non-excluded project files. No globs.'),

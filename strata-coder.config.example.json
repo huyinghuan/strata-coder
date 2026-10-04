@@ -1,10 +1,7 @@
 {
   "baseUrl": "http://127.0.0.1:8080/v1",
   "model": "your-model-id",
-  "apiKeyEnv": "LOCAL_CODER_API_KEY",
-  "workspaceRoots": [
-    "./workspace"
-  ],
+  "apiKeyEnv": "",
   "stateDir": ".local-coder-state",
   "checks": {},
   "defaultChecks": [],

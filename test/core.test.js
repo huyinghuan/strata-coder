@@ -62,7 +62,7 @@ test('scope, traversal, symlinks, secret files and unknown checks are rejected',
   await fs.symlink(dir, path.join(workspace, 'src/link'));
   await assert.rejects(executor.execute('write_file', { path: 'src/link/escaped', content: 'bad' }), /Symlinks/);
   await assert.rejects(executor.execute('run_check', { name: 'arbitrary' }), /not enabled/);
-  await assert.rejects(submitTask(config, { ...task, workspace: dir }), /outside configured/);
+  await assert.rejects(submitTask(config, { ...task, workspace: undefined }), /workspace is required/);
   await assert.rejects(submitTask(config, { ...task, check_names: ['missing'] }), /Unknown check/);
   await assert.rejects(executor.execute('replace_text', { path: 'src/math.cjs', old_text: 'missing', new_text: 'x' }), /exactly once/);
 });
@@ -87,6 +87,35 @@ test('snapshot includes dirty and untracked files while excluding secrets and pr
   assert.equal(diff.out_of_scope.length, 0);
   await fs.writeFile(path.join(copy, 'note.txt'), 'changed outside allowed scope');
   assert.deepEqual((await diffArtifacts(copy, task, config)).out_of_scope, ['note.txt']);
+});
+
+test('diffArtifacts captures newly created untracked files in a worker copy under the state directory', async t => {
+  const { config, task, workspace } = await fixture(t);
+  const copy = path.join(config.stateDir, 'jobs', 'copy');
+  await fs.cp(workspace, copy, { recursive: true });
+  await runCommand(['git', 'init', '--quiet'], { cwd: copy });
+  await runCommand(['git', 'add', '-A'], { cwd: copy });
+  await runCommand(['git', '-c', 'user.name=Local Coder', '-c', 'user.email=local-coder@localhost', '-c', 'commit.gpgsign=false', 'commit', '--quiet', '--allow-empty', '-m', 'Worker copy base'], { cwd: copy });
+  await fs.writeFile(path.join(copy, 'src/added.cjs'), 'exports.added = 1;\n');
+  await fs.mkdir(path.join(copy, '.strata-coder'), { recursive: true });
+  await fs.writeFile(path.join(copy, '.strata-coder/config.json'), '{}\n');
+  const diff = await diffArtifacts(copy, task, config);
+  assert.ok(diff.changed_files.includes('src/added.cjs'), JSON.stringify(diff.changed_files));
+  assert.match(diff.patch, /added\.cjs/);
+  assert.ok(!diff.changed_files.includes('.strata-coder/config.json'), JSON.stringify(diff.changed_files));
+});
+
+test('a state directory located inside the workspace root is still excluded from snapshots', async t => {
+  const probe = await fixture(t);
+  const workspace = await fs.realpath(probe.workspace);
+  const { config, dir } = await fixture(t, { stateDir: path.join(workspace, '.state') });
+  assert.equal(config.stateDir, path.join(workspace, '.state'));
+  await fs.mkdir(config.stateDir, { recursive: true });
+  await fs.writeFile(path.join(config.stateDir, 'job-state.json'), '{"stage":"running"}\n');
+  const copy = path.join(dir, 'excluded-copy');
+  await snapshot(workspace, copy, config);
+  await assert.rejects(fs.stat(path.join(copy, '.state/job-state.json')), { code: 'ENOENT' });
+  assert.match(await fs.readFile(path.join(copy, 'src/math.cjs'), 'utf8'), /a - b/);
 });
 
 test('final verification failures are repaired locally instead of reporting false success', async t => {

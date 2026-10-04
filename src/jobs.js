@@ -47,6 +47,12 @@ export function publicJob(job) {
   return { ...rest, suggested_poll_seconds: terminal.has(job.status) ? 0 : 10 };
 }
 
+function assertInScope(job, scope) {
+  if (scope && !scope.allowsSync(job.task.workspace)) {
+    throw new Error('Task workspace is outside this connection roots: ' + job.task.workspace);
+  }
+}
+
 function releaseStaleLock(config, lock) {
   try {
     const owner = readJSON(lock);
@@ -61,12 +67,16 @@ function releaseStaleLock(config, lock) {
   }
 }
 
-export async function submitTask(config, input) {
+export async function submitTask(config, input, scope = null) {
   const task = taskSchema.parse(input);
+  if (scope) {
+    task.workspace = await scope.resolveTaskWorkspace(task.workspace);
+  } else if (!task.workspace) {
+    throw new Error('workspace is required when no host workspace scope is available.');
+  }
   if (!path.isAbsolute(task.workspace)) throw new Error('workspace must be an absolute path.');
   task.workspace = fs.realpathSync(task.workspace);
   if (!fs.statSync(task.workspace).isDirectory()) throw new Error('workspace must be a directory.');
-  if (!config.workspaceRoots.some(root => within(root, task.workspace))) throw new Error('Workspace is outside configured workspaceRoots.');
   if (within(config.stateDir, task.workspace)) throw new Error('Cannot use the worker state directory as a workspace.');
   task.allowed_paths = task.allowed_paths.map(cleanRelative);
   task.check_names = [...new Set([...config.defaultChecks, ...(task.check_names || [])])];
@@ -128,27 +138,30 @@ async function submitLocked(config, task, id, dir, fingerprint, lock) {
   }
 }
 
-export async function getTask(config, id, waitSeconds = 0) {
+export async function getTask(config, id, waitSeconds = 0, scope = null) {
   const deadline = Date.now() + Math.min(Math.max(waitSeconds, 0), 25) * 1000;
   let job;
   do {
     job = readJob(config, id);
+    assertInScope(job, scope);
     if (terminal.has(job.status) || Date.now() >= deadline) return publicJob(job);
     await new Promise(resolve => setTimeout(resolve, 250));
   } while (true);
 }
 
-export function cancelTask(config, id) {
+export function cancelTask(config, id, scope = null) {
   const job = readJob(config, id);
+  assertInScope(job, scope);
   if (terminal.has(job.status)) return publicJob(job);
   fs.writeFileSync(path.join(jobDir(config, id), 'cancel'), now(), { mode: 0o600 });
   return { task_id: id, status: job.status, cancellation_requested: true };
 }
 
-export function readArtifact(config, id, artifact, offset = 0, limit = 12000) {
+export function readArtifact(config, id, artifact, offset = 0, limit = 12000, scope = null) {
   const names = { patch: 'changes.patch', checks: 'checks.json', events: 'events.jsonl' };
   if (!Object.hasOwn(names, artifact)) throw new Error('artifact must be patch, checks, or events.');
   const job = readJob(config, id);
+  assertInScope(job, scope);
   if (artifact === 'patch' && !terminal.has(job.status)) throw new Error('Patch is available after the task stops.');
   const file = path.join(jobDir(config, id), names[artifact]);
   if (!fs.existsSync(file)) throw new Error('Artifact is not yet available.');

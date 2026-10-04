@@ -14,7 +14,7 @@ export async function fixture(t, overrides = {}) {
   await fs.writeFile(path.join(workspace, 'test/math.test.cjs'), "const {test} = require('node:test'); const assert = require('node:assert/strict'); const {add} = require('../src/math.cjs'); test('addition', () => { assert.equal(add(2, 3), 5); assert.equal(add(-1, 1), 0); });\n");
   const configPath = path.join(dir, 'config.json');
   await fs.writeFile(configPath, JSON.stringify({
-    baseUrl: 'http://127.0.0.1:1/v1', model: 'test-model', workspaceRoots: [workspace], stateDir: path.join(dir, 'state'),
+    baseUrl: 'http://127.0.0.1:1/v1', model: 'test-model', stateDir: path.join(dir, 'state'),
     maxTurns: 8, maxTaskSeconds: 30, requestTimeoutSeconds: 5,
     checks: { unit: { command: [process.execPath, '--test', 'test/math.test.cjs'], timeoutSeconds: 5 } }, defaultChecks: ['unit'],
     ...overrides,

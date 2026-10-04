@@ -6,7 +6,11 @@ import { cleanRelative, within, allowedFile } from './config.js';
 import { executionEnv } from './process.js';
 
 const exec = promisify(execFile);
-const ignoredParts = new Set(['.git', '.hg', '.svn', 'node_modules', '.venv', 'venv', '__pycache__', '.local-coder-state', '.aws', '.ssh', '.codex', '.agents']);
+const ignoredParts = new Set(['.git', '.hg', '.svn', 'node_modules', '.venv', 'venv', '__pycache__', '.local-coder-state', '.strata-coder', '.aws', '.ssh', '.codex', '.agents']);
+
+function insideStateDir(root, fullPath, config) {
+  return within(root, config.stateDir) && within(config.stateDir, fullPath);
+}
 export function excluded(relative, config) {
   const parts = relative.split('/');
   return parts.some(p => ignoredParts.has(p) || /^\.env(?:\.|$)/.test(p) || /\.(pem|key)$/i.test(p)) ||
@@ -37,7 +41,7 @@ async function git(root, args, maxBuffer = 64 * 1024 * 1024) {
 async function walk(root, config, prefix = '', result = []) {
   for (const entry of await fs.readdir(path.join(root, prefix), { withFileTypes: true })) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (excluded(rel, config) || within(config.stateDir, path.join(root, rel))) continue;
+    if (excluded(rel, config) || insideStateDir(root, path.join(root, rel), config)) continue;
     if (entry.isSymbolicLink()) continue;
     if (entry.isDirectory()) await walk(root, config, rel, result);
     else if (entry.isFile()) result.push(rel);
@@ -56,7 +60,7 @@ export async function snapshot(source, destination, config, signal) {
   const skipped = [];
   for (const rel of files) {
     signal?.throwIfAborted();
-    if (excluded(rel, config) || within(config.stateDir, path.join(source, rel))) { skipped.push(rel); continue; }
+    if (excluded(rel, config) || insideStateDir(source, path.join(source, rel), config)) { skipped.push(rel); continue; }
     let input;
     try { input = await safePath(source, rel, config); }
     catch (error) { skipped.push(rel); continue; }
