@@ -19,7 +19,7 @@ const client = new Client({ name: 'package-validation', version: '1.0.0' });
 try {
   const packed = JSON.parse((await run(npm, ['pack', '--json', '--ignore-scripts', '--pack-destination', scratch], root)).stdout)[0];
   const files = packed.files.map(file => file.path);
-  for (const required of ['src/mcp.js', 'src/worker.js', 'src/metadata.js', 'LICENSE', 'README.md', 'strata-coder.config.example.json']) {
+  for (const required of ['src/mcp.js', 'src/worker.js', 'src/metadata.js', 'LICENSE', 'README.md', 'docs/AI-INSTALL.md', 'strata-coder.config.example.json']) {
     assert.ok(files.includes(required), `Missing ${required}`);
   }
   for (const file of files) {

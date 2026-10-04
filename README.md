@@ -6,6 +6,26 @@ An MCP implementation worker for local OpenAI-compatible coding models.
 
 本项目独立维护，不隶属于同名推理服务；只依赖兼容的 `/chat/completions` 接口和工具调用能力。
 
+## 给 AI 助手：安装与集成
+
+用户要求你安装本项目时，请先阅读 [AI 安装指南](docs/AI-INSTALL.md)，再执行安装。不要只给用户一段配置就声称完成。
+
+1. 识别用户的操作系统、Node/Git、目标客户端及其版本，读取现有配置；缺少模型地址、模型 ID、项目目录或检查命令时先收集信息，不照搬占位符。
+2. 查询 npm 上实际存在的版本并固定版本；尚未发布时使用本仓库源码。模型服务器地址是模型 API，不是 MCP URL。
+3. 配置文件保存在安装目录之外；限制工作目录，配置真实检查，密钥使用环境变量。
+4. 将 MCP stdio 启动命令合并到目标客户端配置：Codex 使用 `mcp_servers`；OpenCode 2.x 使用 `mcp.servers`；旧版格式另行识别。备份并保留已有模型、provider、MCP 和项目规则。
+5. 合并 [委派规则](prompts/planner.md)，保留用户按任务选择主模型/本地模型的能力；发现已有相同服务时更新已有项，避免重复注册。
+6. 验证配置可解析、MCP 握手成功、五个工具可见，调用 `get_capabilities` 确认实际加载的配置。真实推理只在用户授权范围内的临时项目验证。
+7. 汇报安装版本、修改过的配置文件、已验证项、待完成项与卸载方法；登录、权限或重启被阻塞时明确说明，不宣称成功。
+
+可以把下面的话交给自己的 AI 助手：
+
+```text
+请阅读 https://github.com/huyinghuan/strata-coder 的 README、docs/AI-INSTALL.md 和 prompts/planner.md，
+将 Strata Coder 安装并集成到我的编程客户端。先识别客户端版本并保留现有配置，
+确认模型地址、模型 ID、项目范围和检查命令，再验证 MCP 工具可用。
+```
+
 ## 安装
 
 需要 Node.js 22+、Git，以及支持 `tools` / `tool_calls` 的模型端点。开发及真实推理测试在 macOS 上完成；CI 配置了 macOS/Linux 与 Node 22/24 的测试矩阵，Windows 尚未验证。
