@@ -1,0 +1,9 @@
+{
+  "checks": {
+    "unit": {
+      "command": ["node", "--test", "test/unit.test.js"],
+      "timeoutSeconds": 60
+    }
+  },
+  "defaultChecks": ["unit"]
+}

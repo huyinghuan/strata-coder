@@ -1,0 +1,53 @@
+{
+  "name": "strata-coder",
+  "version": "0.1.0",
+  "description": "MCP implementation worker for local OpenAI-compatible coding models",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/mcp.js",
+    "smoke": "node scripts/smoke.js",
+    "host-config": "node scripts/host-config.js",
+    "regression": "node scripts/regression.js",
+    "test:package": "node scripts/test-package.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.28.0",
+    "proper-lockfile": "4.1.2",
+    "zod": "^3.25.76"
+  },
+  "license": "MIT",
+  "author": "huyinghuan",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huyinghuan/strata-coder.git"
+  },
+  "homepage": "https://github.com/huyinghuan/strata-coder#readme",
+  "bugs": {
+    "url": "https://github.com/huyinghuan/strata-coder/issues"
+  },
+  "keywords": [
+    "mcp",
+    "local-llm",
+    "coding-agent",
+    "openai-compatible"
+  ],
+  "bin": {
+    "strata-coder": "src/mcp.js"
+  },
+  "files": [
+    "src/",
+    "prompts/",
+    "examples/",
+    "scripts/host-config.js",
+    "strata-coder.config.example.json",
+    "docs/"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

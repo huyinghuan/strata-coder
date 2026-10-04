@@ -1,0 +1,20 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadConfig } from '../src/config.js';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const config = loadConfig(process.argv[2] || (process.env.STRATA_CODER_CONFIG || process.env.LOCAL_CODER_CONFIG) || path.join(root, 'local-coder.config.json'));
+const args = [path.join(root, 'src/mcp.js'), '--config', config.configPath];
+const server = { type: 'local', command: [process.execPath, ...args], codemode: false };
+const quote = s => `'${s.replaceAll("'", "'\\''")}'`;
+console.log('Generic MCP stdio configuration (adapt the wrapper to your client):\n');
+console.log(JSON.stringify({ mcpServers: { strata_coder: { command: process.execPath, args } } }, null, 2));
+console.log('OpenCode 2.x: merge into ~/.config/opencode/opencode.json(c) (preserves your current model):\n');
+console.log(JSON.stringify({ $schema: 'https://opencode.ai/config.json', mcp: { servers: { local_coder: server } } }, null, 2));
+console.log(`\nMerge the delegation rules from ${path.join(root, 'prompts/planner.md')} into your project AGENTS.md. OpenCode V2 does not load the instructions array.`);
+console.log('\nCodex CLI: register the same stdio server:\n');
+console.log(['codex', 'mcp', 'add', 'local_coder', '--', process.execPath, ...args].map(quote).join(' '));
+console.log('\nCodex config.toml equivalent:\n');
+console.log(`[mcp_servers.local_coder]\ncommand = ${JSON.stringify(process.execPath)}\nargs = ${JSON.stringify(args)}\ntool_timeout_sec = 60`);
+console.log('\nAdd the delegation instructions from prompts/planner.md to the primary agent instructions of your host.');
+console.log('Other harnesses: connect using the same MCP stdio command. There is no standalone task CLI.');

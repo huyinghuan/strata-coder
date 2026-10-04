@@ -1,0 +1,8 @@
+{
+  "workspace": "/absolute/path/to/your/project",
+  "task": "为用户列表接口增加分页，保持现有返回字段兼容。先阅读相关实现，再修改代码。",
+  "acceptance": ["支持 page 和 page_size", "缺省行为保持兼容", "覆盖分页边界情况"],
+  "allowed_paths": ["src", "tests"],
+  "check_names": [],
+  "request_id": "users-pagination-001"
+}

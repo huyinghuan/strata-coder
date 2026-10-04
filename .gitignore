@@ -1,0 +1,14 @@
+node_modules/
+.local-coder-state/
+local-coder.config.json
+*.log
+.regression-workspaces/
+strata-coder.config.json
+reports/
+.DS_Store
+*.tgz
+.env
+.env.*
+.npmrc
+__pycache__/
+*.pyc

@@ -1,0 +1,28 @@
+{
+  "baseUrl": "http://127.0.0.1:8080/v1",
+  "model": "your-model-id",
+  "apiKeyEnv": "LOCAL_CODER_API_KEY",
+  "workspaceRoots": [
+    "./workspace"
+  ],
+  "stateDir": ".local-coder-state",
+  "checks": {},
+  "defaultChecks": [],
+  "maxTurns": 20,
+  "maxTaskSeconds": 900,
+  "requestTimeoutSeconds": 360,
+  "maxOutputTokens": 13000,
+  "maxContextChars": 120000,
+  "exclude": [
+    "local-model-eval",
+    "dist",
+    "build",
+    "coverage",
+    "reports",
+    ".regression-workspaces"
+  ],
+  "temperature": 0,
+  "requireChecks": true,
+  "maxRepairAttempts": 2,
+  "reasoningEffort": "low"
+}
